@@ -10,12 +10,22 @@ import { Avatar, AvatarStack } from "@/components/ui/avatar";
 import { StatusTimeline, type TimelineStep } from "@/components/ui/status-timeline";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal, ConfirmDialog } from "@/components/ui/modal";
+import { Combobox } from "@/components/ui/combobox";
 import { getDeal, getDealCostTotal, getDealMargin, getDealMarginPct, formatMoney, type DealStatus, type DealPosition, type DealPart } from "@/lib/mock-data";
+import { COUNTERPARTIES } from "@/lib/mock-data";
 import {
-  ArrowLeft, Printer, DotsThree, CheckCircle, Circle, Spinner,
-  ChatCircle, FileText, Truck, CurrencyCircleDollar, ClockCounterClockwise,
-  Plus, ArrowSquareOut, Eye, X, Check,
+  ArrowLeft, Printer, DotsThree,
+  Plus, ArrowSquareOut, Eye,
 } from "@phosphor-icons/react";
+
+const SUPPLIER_OPTIONS = COUNTERPARTIES
+  .filter((c) => c.role === "Подрядчик")
+  .map((c) => ({
+    value: c.name,
+    label: c.name,
+    description: c.tags.slice(0, 2).join(", "),
+    badge: `★ ${c.rating}`,
+  }));
 
 const statusToTimeline: Record<DealStatus, number> = {
   draft: 0, proposal_sent: 1, approved: 2, in_production: 3, ready: 4, shipped: 5, closed: 6, cancelled: 0,
@@ -240,22 +250,6 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
                           </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {part.operations.map((op) => (
-                          <div key={op.code} title={op.label}
-                            className={`flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-xs font-medium ${
-                              op.status === "done"        ? "bg-success-light text-[var(--color-success-700)]" :
-                              op.status === "in_progress" ? "bg-primary-light text-primary ring-1 ring-primary/30" :
-                              "bg-subtle text-text-tertiary"
-                            }`}
-                          >
-                            {op.status === "done"        ? <CheckCircle size={14} weight="fill" /> :
-                             op.status === "in_progress" ? <Spinner size={14} className="animate-spin" /> :
-                             <Circle size={14} />}
-                            {op.code}
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -360,10 +354,14 @@ export default function DealDetailPage({ params }: { params: Promise<{ id: strin
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-text-primary">Подрядчик</label>
-            <input type="text" value={newPart.contractor} onChange={(e) => setNewPart((d) => ({ ...d, contractor: e.target.value }))}
-              placeholder="РезкаПро, МеталлПро..."
-              className="h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm placeholder:text-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            <label className="text-sm font-medium text-text-primary">Поставщик / подрядчик</label>
+            <Combobox
+              options={SUPPLIER_OPTIONS}
+              value={newPart.contractor}
+              onChange={(v) => setNewPart((d) => ({ ...d, contractor: v }))}
+              placeholder="Выберите поставщика"
+              searchPlaceholder="Поиск по названию, услугам..."
+              allowCustom
             />
           </div>
           <div className="space-y-1.5">

@@ -128,7 +128,7 @@ export function Topbar() {
 
         {/* Quick actions */}
         <button
-          onClick={() => router.push("/deals")}
+          onClick={() => router.push("/deals?new=1")}
           className="flex items-center gap-1.5 rounded-[var(--radius-md)] bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors shadow-xs"
           aria-label="Создать сделку"
         >
