@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { FileUpload } from "@/components/ui/file-upload";
-import { ConfirmDialog } from "@/components/ui/modal";
+import { ConfirmDialog, Modal } from "@/components/ui/modal";
 import {
   ArrowLeft,
   FileText,
@@ -95,13 +96,17 @@ const versionStatusVariant = {
 };
 
 export default function DrawingDetailPage() {
+  const router = useRouter();
   const [selectedVersion, setSelectedVersion] = useState(versions[0]);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [approveChecked, setApproveChecked] = useState(false);
   const [approveLoading, setApproveLoading] = useState(false);
   const [approved, setApproved] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [localComments, setLocalComments] = useState(comments);
   const [showUpload, setShowUpload] = useState(false);
+  const [showReworkModal, setShowReworkModal] = useState(false);
+  const [reworkReason, setReworkReason] = useState("");
 
   const handleApprove = async () => {
     setApproveLoading(true);
@@ -115,7 +120,7 @@ export default function DrawingDetailPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" onClick={() => router.push("/engineering")}>
           <ArrowLeft size={16} className="mr-1" />
           Инжиниринг
         </Button>
@@ -212,7 +217,7 @@ export default function DrawingDetailPage() {
                     <span>Ожидает вашего согласования</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setShowReworkModal(true)}>
                       <XCircle size={14} className="mr-1.5" />
                       Запросить доработку
                     </Button>
@@ -289,7 +294,7 @@ export default function DrawingDetailPage() {
             </div>
 
             <div className="space-y-3 max-h-72 overflow-y-auto">
-              {comments.map((c) => (
+              {localComments.map((c) => (
                 <div key={c.id} className="flex items-start gap-2.5">
                   <Avatar name={c.author} size="sm" />
                   <div className="flex-1 min-w-0">
@@ -312,13 +317,61 @@ export default function DrawingDetailPage() {
                 rows={2}
                 className="flex-1 rounded-[var(--radius-md)] border border-border bg-subtle px-3 py-2 text-xs placeholder:text-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
               />
-              <Button size="icon" disabled={!newComment.trim()}>
+              <Button size="icon" disabled={!newComment.trim()} onClick={() => {
+                if (!newComment.trim()) return;
+                setLocalComments((prev) => [...prev, {
+                  id: String(prev.length + 1),
+                  author: "Иван Смирнов",
+                  role: "Менеджер",
+                  text: newComment,
+                  date: "только что",
+                  version: `v${selectedVersion.version}`,
+                }]);
+                setNewComment("");
+              }}>
                 <PaperPlaneRight size={16} weight="fill" />
               </Button>
             </div>
           </Card>
         </div>
       </div>
+
+      {/* Rework Modal */}
+      <Modal open={showReworkModal} onClose={() => setShowReworkModal(false)} title="Запрос доработки" size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowReworkModal(false)}>Отмена</Button>
+            <Button variant="danger" disabled={!reworkReason.trim()} onClick={() => {
+              setLocalComments((prev) => [...prev, {
+                id: String(prev.length + 1),
+                author: "Иван Смирнов",
+                role: "Менеджер",
+                text: `🔴 Запрос доработки: ${reworkReason}`,
+                date: "только что",
+                version: `v${selectedVersion.version}`,
+              }]);
+              setReworkReason("");
+              setShowReworkModal(false);
+            }}>
+              Отправить запрос
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-text-secondary">
+            Опишите что нужно исправить в чертеже <span className="font-medium">{selectedVersion.name}</span>.
+            Конструктор получит уведомление.
+          </p>
+          <textarea
+            value={reworkReason}
+            onChange={(e) => setReworkReason(e.target.value)}
+            placeholder="Укажите причину: несоответствие размерам ТЗ, неверный материал, ошибка в чертеже..."
+            rows={4}
+            className="w-full rounded-[var(--radius-md)] border border-border bg-subtle px-3 py-2 text-sm placeholder:text-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+          />
+        </div>
+      </Modal>
 
       {/* Approve Confirm Dialog */}
       <ConfirmDialog

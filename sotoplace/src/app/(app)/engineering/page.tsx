@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import { ENGINEERING_TASKS, type TaskStatus, type TaskPriority } from "@/lib/mock-data";
 import {
   Plus, MagnifyingGlass, Clock, Warning, CheckCircle,
@@ -30,21 +31,47 @@ const tabs = [
   { label: "На согласовании", count: ENGINEERING_TASKS.filter((t) => t.status === "review").length },
 ];
 
+type Task = typeof ENGINEERING_TASKS[number];
+
 export default function EngineeringPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState(0);
+  const [tasks, setTasks] = useState<Task[]>(ENGINEERING_TASKS as unknown as Task[]);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ title: "", priority: "medium" as TaskPriority, deadline: "", dealNum: "" });
 
-  const filtered = ENGINEERING_TASKS.filter((t) =>
+  const filtered = tasks.filter((t) =>
     !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.dealNum.includes(search)
   );
+
+  function submitNewTask() {
+    if (!newTask.title.trim()) return;
+    setTasks((prev) => [{
+      id: `T-${String(prev.length + 1).padStart(3, "0")}`,
+      title: newTask.title,
+      status: "new" as TaskStatus,
+      priority: newTask.priority,
+      deadline: newTask.deadline || "—",
+      deadlineUrgent: false,
+      dealId: "2847",
+      dealNum: newTask.dealNum || "#—",
+      position: "—",
+      version: "v1",
+      comments: 0,
+    } as unknown as Task, ...prev]);
+    setNewTask({ title: "", priority: "medium", deadline: "", dealNum: "" });
+    setNewTaskOpen(false);
+  }
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-[-0.01em]">Инжиниринг</h1>
-        <Button size="md"><Plus size={16} weight="bold" className="mr-1.5" />Новая задача</Button>
+        <Button size="md" onClick={() => setNewTaskOpen(true)}>
+          <Plus size={16} weight="bold" className="mr-1.5" />Новая задача
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -153,6 +180,51 @@ export default function EngineeringPage() {
           );
         })}
       </div>
+
+      {/* New Task Modal */}
+      <Modal open={newTaskOpen} onClose={() => setNewTaskOpen(false)} title="Новая задача" size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setNewTaskOpen(false)}>Отмена</Button>
+            <Button onClick={submitNewTask} disabled={!newTask.title.trim()}>Создать задачу</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-text-primary">Название чертежа *</label>
+            <input type="text" value={newTask.title} onChange={(e) => setNewTask((d) => ({ ...d, title: e.target.value }))}
+              placeholder="Каркас стола СТ-120, Столешница..."
+              className="h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm placeholder:text-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-text-primary">Приоритет</label>
+              <select value={newTask.priority} onChange={(e) => setNewTask((d) => ({ ...d, priority: e.target.value as TaskPriority }))}
+                className="h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="high">Срочно</option>
+                <option value="medium">Средний</option>
+                <option value="low">Низкий</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-text-primary">Дедлайн</label>
+              <input type="date" value={newTask.deadline} onChange={(e) => setNewTask((d) => ({ ...d, deadline: e.target.value }))}
+                className="h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-text-primary">Номер сделки</label>
+            <input type="text" value={newTask.dealNum} onChange={(e) => setNewTask((d) => ({ ...d, dealNum: e.target.value }))}
+              placeholder="#2847"
+              className="h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm placeholder:text-text-tertiary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
